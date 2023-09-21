@@ -1,0 +1,15 @@
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 11208b4... feat: support vllm
+[core]
+    autostage = true
+    remote = gs
+['remote "gs"']
+<<<<<<< HEAD
+    url = gs://public-europe-west2-c-artifacts/vdp/public-dvc-models/model-llama2-7b/cpu
+>>>>>>> 07130b5... feat: support transformer cpu mode
+=======
+    url = gs://public-europe-west2-c-artifacts/vdp/public-dvc-models/model-llama2-7b/vllm
+>>>>>>> 11208b4... feat: support vllm
