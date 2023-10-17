@@ -1,0 +1,5 @@
+[core]
+    autostage = true
+    remote = gs
+['remote "gs"']
+    url = gs://public-europe-west2-c-artifacts/vdp/public-dvc-models/model-llama2-7b/vllm

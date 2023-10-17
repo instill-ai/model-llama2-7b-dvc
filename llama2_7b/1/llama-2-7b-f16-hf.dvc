@@ -1,0 +1,5 @@
+outs:
+- md5: 796e42447a9bc03295e3d1e5aea75301.dir
+  size: 13479299277
+  nfiles: 9
+  path: llama-2-7b-f16-hf
