@@ -61,7 +61,7 @@ class TritonPythonModel:
             AsyncEngineArgs(
                 model = model_path,
                 disable_log_requests = "true",
-                gpu_memory_utilization = 0.9
+                gpu_memory_utilization = 0.8
             )
         )
 
