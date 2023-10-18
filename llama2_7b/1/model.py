@@ -62,7 +62,8 @@ class TritonPythonModel:
             AsyncEngineArgs(
                 model = model_path,
                 disable_log_requests = "true",
-                gpu_memory_utilization = 0.8
+                gpu_memory_utilization = 0.8,
+                tensor_parallel_size=4
             )
         )
 
