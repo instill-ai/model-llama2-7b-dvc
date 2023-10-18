@@ -29,6 +29,7 @@ import json
 import os
 import threading
 from typing import AsyncGenerator
+from pathlib import Path
 
 import numpy as np
 import triton_python_backend_utils as pb_utils
@@ -52,7 +53,7 @@ class TritonPythonModel:
             self.using_decoupled
         ), "vLLM Triton backend must be configured to use decoupled model transaction policy"
 
-        model_path = os.path.join(os.getcwd(), 'llama-2-7b-f16-hf')
+        model_path = str(Path(__file__).parent.absolute().joinpath('llama-2-7b-f16-hf/'))
 
         # Create an AsyncLLMEngine from the config from JSON
         # Reference for AsyncLLMEngine Configs:
