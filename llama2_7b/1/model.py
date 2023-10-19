@@ -16,7 +16,7 @@ class TritonPythonModel:
         self.llm_engine = LLM(
             model = model_path,
             gpu_memory_utilization = 0.8,
-            tensor_parallel_size = 4
+            tensor_parallel_size = 1
         )
         
         output0_config = pb_utils.get_output_config_by_name(self.model_config, "text")
