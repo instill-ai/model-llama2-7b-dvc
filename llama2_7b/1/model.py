@@ -15,8 +15,8 @@ class TritonPythonModel:
         # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
         self.llm_engine = LLM(
             model = model_path,
-            gpu_memory_utilization = 0.8,
-            tensor_parallel_size = 2
+            gpu_memory_utilization = 0.14,
+            tensor_parallel_size = 3 # for A100 40G Memory
         )
         
         output0_config = pb_utils.get_output_config_by_name(self.model_config, "text")
