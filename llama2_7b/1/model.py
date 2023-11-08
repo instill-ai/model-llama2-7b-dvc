@@ -65,12 +65,12 @@ Both keys and values are strings. The dictionary keys and values are:
 
         for request in requests:
             try:
-                prompt = str(pb_utils.get_input_tensor_by_name(request, "prompt").as_numpy()[0])
+                prompt = str(pb_utils.get_input_tensor_by_name(request, "prompt").as_numpy()[0][0].decode("utf-8"))
                 print(f'[DEBUG] input `prompt` type({type(prompt)}): {prompt}')
 
                 extra_params_str = ""
                 if pb_utils.get_input_tensor_by_name(request, "extra_params") is not None:
-                    extra_params_str = str(pb_utils.get_input_tensor_by_name(request, "extra_params").as_numpy()[0])
+                    extra_params_str = str(pb_utils.get_input_tensor_by_name(request, "extra_params").as_numpy()[0][0].decode("utf-8"))
                 print(f'[DEBUG] input `extra_params` type({type(extra_params_str)}): {extra_params_str}')
 
                 extra_params = {}
@@ -78,6 +78,7 @@ Both keys and values are strings. The dictionary keys and values are:
                 try:
                     extra_params = json.loads(extra_params_str)
                 except json.decoder.JSONDecodeError:
+                    print('[DEBUG] WARNING `extra_params` parsing faield!')
                     pass
 
                 max_new_tokens = 100
@@ -110,7 +111,7 @@ Both keys and values are strings. The dictionary keys and values are:
 
                 stop_words = ""
                 if pb_utils.get_input_tensor_by_name(request, "stop_words") is not None:
-                    stop_words = pb_utils.get_input_tensor_by_name(request, "stop_words").as_numpy()
+                    stop_words = pb_utils.get_input_tensor_by_name(request, "stop_words").as_numpy()[0]
                 print(f'[DEBUG] input `stop_words` type({type(stop_words)}): {stop_words}')
                 if len(stop_words) == 0:
                     stop_words = None
