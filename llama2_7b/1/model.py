@@ -1,7 +1,7 @@
 # pylint: skip-file
 import os
 import random
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import json
 import time
@@ -22,8 +22,8 @@ class TritonPythonModel:
         # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
         self.llm_engine = LLM(
             model = model_path,
-            gpu_memory_utilization = 0.21,
-            tensor_parallel_size = 2 # for A100 40G Memory
+            gpu_memory_utilization =  0.42,
+            tensor_parallel_size = 1 # for A100 40G Memory
         )
 
         output0_config = pb_utils.get_output_config_by_name(self.model_config, "text")
