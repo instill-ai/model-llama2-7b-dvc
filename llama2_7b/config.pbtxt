@@ -1,36 +1,44 @@
 name: "llama2_7b"
 backend: "python"
 
-max_batch_size: 0
+max_batch_size: 1
 
 parameters: {
   key: "EXECUTION_ENV_PATH",
   value: {string_value: "/conda-pack/python-3-8.tar.gz"}
 }
+
 input [
   {
-    name: "query"
+    name: "prompt"
     data_type: TYPE_STRING
-    dims: [ -1 ]
+    dims: [ 1 ]
   },
   {
-    name: "len"
+    name: "prompt_image"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+    optional: true
+  },
+  {
+    name: "max_new_tokens"
     data_type: TYPE_UINT32
-    dims: [ -1 ]
+    dims: [ 1 ]
   },
   {
-   name: "bad"
+   name: "stop_words"
    data_type: TYPE_STRING
    dims: [ -1 ]
   },
   {
-   name: "stop"
-   data_type: TYPE_STRING
-   dims: [ -1 ]
+    name: "temperature"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+    optional: true
   },
   {
-    name: "runtime_top_k"
-    data_type: TYPE_UINT32
+    name: "top_k"
+    data_type: TYPE_INT32
     dims: [ 1 ]
     optional: true
   },
@@ -39,6 +47,11 @@ input [
     data_type: TYPE_UINT64
     dims: [ 1 ]
     optional: true
+  },
+  {
+    name: "extra_params"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
   }
 ]
 
