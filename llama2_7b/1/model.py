@@ -22,7 +22,7 @@ class TritonPythonModel:
         # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
         self.llm_engine = LLM(
             model = model_path,
-            gpu_memory_utilization =  0.42,
+            gpu_memory_utilization = 0.42,
             tensor_parallel_size = 1 # for A100 40G Memory
         )
 
