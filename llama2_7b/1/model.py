@@ -1,4 +1,7 @@
 # pylint: skip-file
+import os
+import random
+
 import time
 import json
 from pathlib import Path
@@ -101,9 +104,9 @@ Both keys and values are strings. The dictionary keys and values are:
                 if random_seed > 0:
                    random.seed(random_seed)
                    np.random.seed(random_seed)
-                #    torch.manual_seed(random_seed)
-                #    if torch.cuda.is_available():
-                #        torch.cuda.manual_seed_all(random_seed)
+                   torch.manual_seed(random_seed)
+                   if torch.cuda.is_available():
+                       torch.cuda.manual_seed_all(random_seed)
 
                 stop_words = ""
                 if pb_utils.get_input_tensor_by_name(request, "stop_words") is not None:
