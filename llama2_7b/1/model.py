@@ -65,12 +65,12 @@ Both keys and values are strings. The dictionary keys and values are:
 
         for request in requests:
             try:
-                prompt = str(pb_utils.get_input_tensor_by_name(request, "prompt").as_numpy()[0].decode("utf-8"))
+                prompt = str(pb_utils.get_input_tensor_by_name(request, "prompt").as_numpy()[0])
                 print(f'[DEBUG] input `prompt` type({type(prompt)}): {prompt}')
 
                 extra_params_str = ""
                 if pb_utils.get_input_tensor_by_name(request, "extra_params") is not None:
-                    extra_params_str = str(pb_utils.get_input_tensor_by_name(request, "extra_params").as_numpy()[0].decode("utf-8"))
+                    extra_params_str = str(pb_utils.get_input_tensor_by_name(request, "extra_params").as_numpy()[0])
                 print(f'[DEBUG] input `extra_params` type({type(extra_params_str)}): {extra_params_str}')
 
                 extra_params = {}
