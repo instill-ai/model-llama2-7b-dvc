@@ -140,7 +140,7 @@ Both keys and values are strings. The dictionary keys and values are:
                     
                 )
 
-                self.logger.log_info(f'Inference time cost {time.time()-t0}s with input lenth {len(decoded_input)}')
+                self.logger.log_info(f'Inference time cost {time.time()-t0}s with input lenth {len(prompt)}')
 
                 text_outputs = [
                     seq['generated_text'].encode('utf-8')
