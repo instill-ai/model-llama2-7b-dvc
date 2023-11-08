@@ -120,8 +120,9 @@ Both keys and values are strings. The dictionary keys and values are:
                 else:
                     stop_words = [str(stop_words[0])]
 
-                if stop_words is not None:
-                    extra_params['stop'] = stop_words
+                # TODO: Implement a `KeywordsStoppingCriteria` for stop words
+                # if stop_words is not None:
+                #     extra_params['stop'] = stop_words
                 print(f'[DEBUG] parsed input `stop_words` type({type(stop_words)}): {stop_words}')
 
                 # Inference
