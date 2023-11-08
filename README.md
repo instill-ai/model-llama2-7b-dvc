@@ -7,6 +7,6 @@ Tags:
 
 # Model-Llama2-7b-dvc
 
-🔥🔥🔥 Deploy [Llama2-7b](https://huggingface.co/meta-llama/Llama-2-7b) model on [VDP](https://github.com/instill-ai/vdp). 
+🔥🔥🔥 Deploy [Llama2-7b](https://huggingface.co/meta-llama/Llama-2-7b) model on [VDP](https://github.com/instill-ai/vdp).
 
-This repo contains Llama2-7b model in [vLLM](https://github.com/vllm-project/vllm) and transformers format manged by [DVC](https://dvc.org/).
+This repository contains the Llama2-7b Text Completion Generation Model in the [vLLM](https://github.com/vllm-project/vllm) and Transformers format, managed using [DVC](https://dvc.org/). For information about available extra parameters, please refer to the documentation on [SamplingParams](https://github.com/vllm-project/vllm/blob/v0.2.0/vllm/sampling_params.py) in the vLLM library.
