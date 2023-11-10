@@ -1,7 +1,7 @@
 # pylint: skip-file
 import os
 import random
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import json
 import time
@@ -140,3 +140,4 @@ class TritonPythonModel:
 
     def finalize(self):
         self.logger.log_info("Issuing finalize to vllm backend")
+
