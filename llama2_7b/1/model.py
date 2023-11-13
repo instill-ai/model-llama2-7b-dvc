@@ -118,41 +118,45 @@ class Llama2:
             raw_output_contents=[],
         )
 
+        prompt = ""
+        max_new_tokens = 100
+        top_k = 1
+        temperature = 0.8
+        random_seed = 0
+        stop_words = ""
+        extra_params = {}
+
         for i, b_input_tensor in zip(request.inputs, request.raw_input_contents):
             input_name = i.name
             input_shape = i.shape
             input_datatype = i.datatype
-            input_tensor = deserialize_bytes_tensor(b_input_tensor)
 
             print(
-                f"[DEBUG] input {input_name} type({type(input_tensor[0])}): {input_tensor[0]}"
+                f"[DEBUG] input {input_name} type({type(input_tensor)}): {input_tensor}"
             )
 
-            prompt = ""
+            input_tensor = deserialize_bytes_tensor(b_input_tensor)
+
             if input_name == "prompt":
-                prompt = str(input_tensor[0][0].decode("utf-8"))
+                prompt = str(input_tensor[0].decode("utf-8"))
                 print(f"[DEBUG] input `prompt` type({type(prompt)}): {prompt}")
 
-            max_new_tokens = 100
             if input_name == "max_new_tokens":
                 max_new_tokens = int(input_tensor[0])
                 print(
                     f"[DEBUG] input `max_new_tokens` type({type(max_new_tokens)}): {max_new_tokens}"
                 )
 
-            top_k = 1
             if input_name == "top_k":
                 top_k = int(input_tensor[0])
                 print(f"[DEBUG] input `top_k` type({type(top_k)}): {top_k}")
 
-            temperature = 0.8
             if input_name == "temperature":
                 temperature = float(input_tensor[0])
                 print(
                     f"[DEBUG] input `temperature` type({type(temperature)}): {temperature}"
                 )
 
-            random_seed = 0
             if input_name == "random_seed":
                 random_seed = int(input_tensor[0])
                 print(
@@ -165,7 +169,6 @@ class Llama2:
                     if torch.cuda.is_available():
                         torch.cuda.manual_seed_all(random_seed)
 
-            stop_words = ""
             if input_name == "stop_words":
                 stop_words = input_tensor[0]
                 print(
@@ -182,7 +185,6 @@ class Llama2:
                     f"[DEBUG] parsed input `stop_words` type({type(stop_words)}): {stop_words}"
                 )
 
-            extra_params = {}
             if input_name == "extra_params":
                 extra_params_str = str(input_tensor[0][0].decode("utf-8"))
                 print(
