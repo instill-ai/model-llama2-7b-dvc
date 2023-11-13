@@ -124,6 +124,10 @@ class Llama2:
             input_datatype = i.datatype
             input_tensor = deserialize_bytes_tensor(b_input_tensor)
 
+            print(
+                f"[DEBUG] input {input_name} type({type(input_tensor[0])}): {input_tensor[0]}"
+            )
+
             prompt = ""
             if input_name == "prompt":
                 prompt = str(input_tensor[0][0].decode("utf-8"))
