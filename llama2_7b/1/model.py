@@ -1,9 +1,6 @@
-import io
-from typing import List
 import random
 import json
-import time
-import requests
+import struct
 
 import ray
 import torch
@@ -82,7 +79,7 @@ class Llama2:
                 ),
                 ModelMetadataResponse.TensorMetadata(
                     name="top_k",
-                    datatype=str(DataType.TYPE_INT32.name),
+                    datatype=str(DataType.TYPE_UINT32.name),
                     shape=[1],
                 ),
                 ModelMetadataResponse.TensorMetadata(
@@ -131,34 +128,30 @@ class Llama2:
             input_shape = i.shape
             input_datatype = i.datatype
 
-            print(
-                f"[DEBUG] input {input_name} type({type(input_tensor)}): {input_tensor}"
-            )
-
-            input_tensor = deserialize_bytes_tensor(b_input_tensor)
-
             if input_name == "prompt":
+                input_tensor = deserialize_bytes_tensor(b_input_tensor)
                 prompt = str(input_tensor[0].decode("utf-8"))
                 print(f"[DEBUG] input `prompt` type({type(prompt)}): {prompt}")
 
             if input_name == "max_new_tokens":
-                max_new_tokens = int(input_tensor[0])
+                max_new_tokens = int.from_bytes(b_input_tensor, "little")
                 print(
                     f"[DEBUG] input `max_new_tokens` type({type(max_new_tokens)}): {max_new_tokens}"
                 )
 
             if input_name == "top_k":
-                top_k = int(input_tensor[0])
+                top_k = int.from_bytes(b_input_tensor, "little")
                 print(f"[DEBUG] input `top_k` type({type(top_k)}): {top_k}")
 
             if input_name == "temperature":
-                temperature = float(input_tensor[0])
+                temperature = struct.unpack("f", b_input_tensor)[0]
                 print(
                     f"[DEBUG] input `temperature` type({type(temperature)}): {temperature}"
                 )
+                temperature = round(temperature, 2)
 
             if input_name == "random_seed":
-                random_seed = int(input_tensor[0])
+                random_seed = int.from_bytes(b_input_tensor, "little")
                 print(
                     f"[DEBUG] input `random_seed` type({type(random_seed)}): {random_seed}"
                 )
@@ -170,6 +163,7 @@ class Llama2:
                         torch.cuda.manual_seed_all(random_seed)
 
             if input_name == "stop_words":
+                input_tensor = deserialize_bytes_tensor(b_input_tensor)
                 stop_words = input_tensor[0]
                 print(
                     f"[DEBUG] input `stop_words` type({type(stop_words)}): {stop_words}"
@@ -186,7 +180,8 @@ class Llama2:
                 )
 
             if input_name == "extra_params":
-                extra_params_str = str(input_tensor[0][0].decode("utf-8"))
+                input_tensor = deserialize_bytes_tensor(b_input_tensor)
+                extra_params_str = str(input_tensor[0].decode("utf-8"))
                 print(
                     f"[DEBUG] input `extra_params` type({type(extra_params_str)}): {extra_params_str}"
                 )
@@ -242,6 +237,8 @@ def undeploy_model(model_name: str):
 
 if __name__ == "__main__":
     func, model_config = entry("Llama-2-7b-hf/")
+
+    model_config.ray_actor_options["num_cpus"] = 6
 
     if func == "deploy":
         deploy_model(model_config=model_config)
