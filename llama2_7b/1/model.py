@@ -1,18 +1,16 @@
 import random
-import json
-import struct
 
 import ray
 import torch
 import transformers
 from transformers import AutoTokenizer
 import numpy as np
-from instill.configuration import CORE_RAY_ADDRESS
-from instill.helpers.ray_helper import (
+
+from instill.helpers.const import DataType, TextGenerationInput
+from instill.helpers.ray_io import StandardTaskIO
+from instill.helpers.ray_config import (
     InstillRayModelConfig,
-    DataType,
-    serialize_byte_tensor,
-    deserialize_bytes_tensor,
+    get_compose_ray_address,
     entry,
 )
 
@@ -26,7 +24,7 @@ from ray_pb2 import (
     InferTensor,
 )
 
-ray.init(address=CORE_RAY_ADDRESS)
+ray.init(address=get_compose_ray_address(10001))
 # this import must come after `ray.init()`
 from ray import serve
 
@@ -115,95 +113,31 @@ class Llama2:
             raw_output_contents=[],
         )
 
-        prompt = ""
-        max_new_tokens = 100
-        top_k = 1
-        temperature = 0.8
-        random_seed = 0
-        stop_words = ""
-        extra_params = {}
-
-        for i, b_input_tensor in zip(request.inputs, request.raw_input_contents):
-            input_name = i.name
-            input_shape = i.shape
-            input_datatype = i.datatype
-
-            if input_name == "prompt":
-                input_tensor = deserialize_bytes_tensor(b_input_tensor)
-                prompt = str(input_tensor[0].decode("utf-8"))
-                print(f"[DEBUG] input `prompt` type({type(prompt)}): {prompt}")
-
-            if input_name == "max_new_tokens":
-                max_new_tokens = int.from_bytes(b_input_tensor, "little")
-                print(
-                    f"[DEBUG] input `max_new_tokens` type({type(max_new_tokens)}): {max_new_tokens}"
-                )
-
-            if input_name == "top_k":
-                top_k = int.from_bytes(b_input_tensor, "little")
-                print(f"[DEBUG] input `top_k` type({type(top_k)}): {top_k}")
-
-            if input_name == "temperature":
-                temperature = struct.unpack("f", b_input_tensor)[0]
-                print(
-                    f"[DEBUG] input `temperature` type({type(temperature)}): {temperature}"
-                )
-                temperature = round(temperature, 2)
-
-            if input_name == "random_seed":
-                random_seed = int.from_bytes(b_input_tensor, "little")
-                print(
-                    f"[DEBUG] input `random_seed` type({type(random_seed)}): {random_seed}"
-                )
-                if random_seed > 0:
-                    random.seed(random_seed)
-                    np.random.seed(random_seed)
-                    torch.manual_seed(random_seed)
-                    if torch.cuda.is_available():
-                        torch.cuda.manual_seed_all(random_seed)
-
-            if input_name == "stop_words":
-                input_tensor = deserialize_bytes_tensor(b_input_tensor)
-                stop_words = input_tensor[0]
-                print(
-                    f"[DEBUG] input `stop_words` type({type(stop_words)}): {stop_words}"
-                )
-                if len(stop_words) == 0:
-                    stop_words = None
-                elif stop_words.shape[0] > 1:
-                    # TODO: Check wether shoule we decode this words
-                    stop_words = list(stop_words)
-                else:
-                    stop_words = [str(stop_words[0])]
-                print(
-                    f"[DEBUG] parsed input `stop_words` type({type(stop_words)}): {stop_words}"
-                )
-
-            if input_name == "extra_params":
-                input_tensor = deserialize_bytes_tensor(b_input_tensor)
-                extra_params_str = str(input_tensor[0].decode("utf-8"))
-                print(
-                    f"[DEBUG] input `extra_params` type({type(extra_params_str)}): {extra_params_str}"
-                )
-
-                try:
-                    extra_params = json.loads(extra_params_str)
-                except json.decoder.JSONDecodeError:
-                    print("[DEBUG] WARNING `extra_params` parsing faield!")
-                    continue
-
-        sequences = self.pipeline(
-            prompt,
-            do_sample=True,
-            top_k=top_k,
-            temperature=temperature,
-            num_return_sequences=1,
-            eos_token_id=self.tokenizer.eos_token_id,
-            max_new_tokens=max_new_tokens,
-            **extra_params,
+        task_text_generation_input: TextGenerationInput = (
+            StandardTaskIO.parse_task_text_generation_input(request=request)
         )
 
-        text_outputs = [seq["generated_text"].encode("utf-8") for seq in sequences]
+        if task_text_generation_input.random_seed > 0:
+            random.seed(task_text_generation_input.random_seed)
+            np.random.seed(task_text_generation_input.random_seed)
+            torch.manual_seed(task_text_generation_input.random_seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(task_text_generation_input.random_seed)
+
+        sequences = self.pipeline(
+            task_text_generation_input.prompt,
+            do_sample=True,
+            top_k=task_text_generation_input.top_k,
+            temperature=task_text_generation_input.temperature,
+            num_return_sequences=1,
+            eos_token_id=self.tokenizer.eos_token_id,
+            max_new_tokens=task_text_generation_input.max_new_tokens,
+            **task_text_generation_input.extra_params,
+        )
+
+        task_text_generation_output = StandardTaskIO.parse_task_text_generation_output(
+            sequences=sequences
+        )
 
         resp.outputs.append(
             InferTensor(
@@ -213,7 +147,7 @@ class Llama2:
             )
         )
 
-        resp.raw_output_contents.append(serialize_byte_tensor(np.asarray(text_outputs)))
+        resp.raw_output_contents.append(task_text_generation_output)
 
         return resp
 
