@@ -11,7 +11,11 @@ Tags:
 
 This repository contains the Llama2-7b Text Completion Generation Model in the [vLLM](https://github.com/vllm-project/vllm) and Transformers format, managed using [DVC](https://dvc.org/). For information about available extra parameters, please refer to the documentation on [SamplingParams](https://github.com/vllm-project/vllm/blob/v0.2.0/vllm/sampling_params.py) in the vLLM library.
 
-Following is an example of query parameters:
+Notes:
+
+- Disk Space Requirements: 14G
+- Memory Requirements: 40G (for fp32 in cpu mode)
+- Following is an example of query parameters:
 
 ```
 {
@@ -20,7 +24,6 @@ Following is an example of query parameters:
             "text_generation": {
                 "prompt": "The capital city of Franch is ",
                 "max_new_tokens": "300",
-                "stop_words": "['city']",
                 "temperature": "0.8",
                 "top_k": "50",
                 "random_seed": "42",
