@@ -2,5 +2,4 @@ outs:
 - md5: cf4c4452a520c274f9890632a6187f8e.dir
   size: 13479274324
   nfiles: 10
-  hash: md5
   path: Llama-2-7b-hf
