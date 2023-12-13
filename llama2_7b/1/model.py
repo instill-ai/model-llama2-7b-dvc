@@ -9,8 +9,9 @@ import numpy as np
 from instill.helpers.const import DataType, TextGenerationInput
 from instill.helpers.ray_io import StandardTaskIO
 from instill.helpers.ray_config import (
-    InstillRayModelConfig,
+    instill_deployment,
     get_compose_ray_address,
+    InstillDeployable,
     entry,
 )
 
@@ -29,19 +30,19 @@ ray.init(address=get_compose_ray_address(10001))
 from ray import serve
 
 
-@serve.deployment()
+@instill_deployment
 class Llama2:
     def __init__(self, model_path: str):
-        self.application_name = "_".join(model_path.split("/")[3:5])
-        self.deployement_name = model_path.split("/")[4]
+        # self.application_name = "_".join(model_path.split("/")[3:5])
+        # self.deployement_name = model_path.split("/")[4]
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_path, torch_dtype=torch.float32, low_cpu_mem_usage=True
+            model_path, torch_dtype=torch.float16, low_cpu_mem_usage=True
         )
         self.pipeline = transformers.pipeline(
             "text-generation",
             model=model_path,
-            torch_dtype=torch.float32,  # Needs 26G Memory
-            device="cpu",
+            torch_dtype=torch.float16,  # Needs 26G Memory
+            device="cuda",
         )
 
     def ModelMetadata(self, req: ModelMetadataRequest) -> ModelMetadataResponse:
@@ -152,29 +153,36 @@ class Llama2:
         return resp
 
 
-def deploy_model(model_config: InstillRayModelConfig):
-    c_app = Llama2.options(
-        name=model_config.application_name,
-        ray_actor_options=model_config.ray_actor_options,
-        max_concurrent_queries=model_config.max_concurrent_queries,
-        autoscaling_config=model_config.ray_autoscaling_options,
-    ).bind(model_config.model_path)
+# def deploy_model(model_config: InstillRayModelConfig):
+#     c_app = Llama2.options(
+#         name=model_config.application_name,
+#         ray_actor_options=model_config.ray_actor_options,
+#         max_concurrent_queries=model_config.max_concurrent_queries,
+#         autoscaling_config=model_config.ray_autoscaling_options,
+#     ).bind(model_config.model_path)
 
-    serve.run(
-        c_app, name=model_config.model_name, route_prefix=model_config.route_prefix
-    )
-
-
-def undeploy_model(model_name: str):
-    serve.delete(model_name)
+#     serve.run(
+#         c_app, name=model_config.model_name, route_prefix=model_config.route_prefix
+#     )
 
 
-if __name__ == "__main__":
-    func, model_config = entry("Llama-2-7b-hf/")
+# def undeploy_model(model_name: str):
+#     serve.delete(model_name)
 
-    model_config.ray_actor_options["num_cpus"] = 6
 
-    if func == "deploy":
-        deploy_model(model_config=model_config)
-    elif func == "undeploy":
-        undeploy_model(model_name=model_config.model_name)
+# if __name__ == "__main__":
+#     func, model_config = entry("Llama-2-7b-hf/")
+
+#     model_config.ray_actor_options["num_cpus"] = 6  # TOOD: Check wether this needed in GPU mode
+#     model_config.ray_actor_options["num_gpus"] = 1  # Specify the number of GPUs
+
+#     if func == "deploy":
+#         deploy_model(model_config=model_config)
+#     elif func == "undeploy":
+#         undeploy_model(model_name=model_config.model_name)
+
+deployable = InstillDeployable(Llama2, model_weight_or_folder_name="Llama-2-7b-hf")
+
+# you can also have a fine-grained control of the cpu and gpu resources allocation
+deployable.update_num_cpus(4)
+deployable.update_num_gpus(1)
