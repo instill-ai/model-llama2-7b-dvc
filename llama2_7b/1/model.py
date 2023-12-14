@@ -12,7 +12,6 @@ from instill.helpers.ray_config import (
     instill_deployment,
     get_compose_ray_address,
     InstillDeployable,
-    entry,
 )
 
 from ray_pb2 import (
@@ -56,21 +55,21 @@ class Llama2:
                     datatype=str(DataType.TYPE_STRING.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
-                    name="prompt_image",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[1],
-                ),
-                ModelMetadataResponse.TensorMetadata(
-                    name="max_new_tokens",
-                    datatype=str(DataType.TYPE_UINT32.name),
-                    shape=[1],
-                ),
-                ModelMetadataResponse.TensorMetadata(
-                    name="stop_words",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[-1],
-                ),
+                # ModelMetadataResponse.TensorMetadata(
+                #     name="prompt_image",
+                #     datatype=str(DataType.TYPE_STRING.name),
+                #     shape=[1],
+                # ),
+                # ModelMetadataResponse.TensorMetadata(
+                #     name="max_new_tokens",
+                #     datatype=str(DataType.TYPE_UINT32.name),
+                #     shape=[1],
+                # ),
+                # ModelMetadataResponse.TensorMetadata(
+                #     name="stop_words",
+                #     datatype=str(DataType.TYPE_STRING.name),
+                #     shape=[-1],
+                # ),
                 ModelMetadataResponse.TensorMetadata(
                     name="temperature",
                     datatype=str(DataType.TYPE_FP32.name),
