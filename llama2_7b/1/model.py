@@ -117,6 +117,9 @@ class Llama2:
             StandardTaskIO.parse_task_text_generation_input(request=request)
         )
 
+        if task_text_generation_input.temperature <= 0.0:
+            task_text_generation_input.temperature = 0.8
+
         if task_text_generation_input.random_seed > 0:
             random.seed(task_text_generation_input.random_seed)
             np.random.seed(task_text_generation_input.random_seed)
