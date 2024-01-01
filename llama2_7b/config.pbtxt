@@ -1,16 +1,30 @@
 name: "llama2_7b"
 backend: "python"
 
-max_batch_size: 1
+max_batch_size: 0
 
 parameters: {
   key: "EXECUTION_ENV_PATH",
   value: {string_value: "/conda-pack/python-3-8.tar.gz"}
 }
-
 input [
   {
     name: "prompt"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  },
+  {
+    name: "prompt_images"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  },
+  {
+    name: "chat_history"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  },
+  {
+    name: "system_message"
     data_type: TYPE_STRING
     dims: [ 1 ]
   },
@@ -52,6 +66,7 @@ output [
   }
 ]
 
+# The usage of device is deferred to the vLLM engine
 instance_group [
   {
     count: 1
