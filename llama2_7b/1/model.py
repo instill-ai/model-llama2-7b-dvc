@@ -124,7 +124,7 @@ class TritonPythonModel:
                     images.append(image)
                 text_generation_input.prompt_images = images
 
-            # TODO: Support chat_history in next version
+            # Chat history not supported in Chat Completion Model
             # if pb_utils.get_input_tensor_by_name(request, "chat_history") is not None:
             #     chat_history_str = str(
             #         pb_utils.get_input_tensor_by_name(request, "chat_history")
@@ -244,7 +244,7 @@ class TritonPythonModel:
             )
 
             self.logger.log_info(
-                f"Inference time cost {time.time()-t0}s with input lenth {len(prompt)}"
+                f"Inference time cost {time.time()-t0}s with input lenth {len(text_generation_input.prompt)}"
             )
 
             text_outputs = [seq["generated_text"].encode("utf-8") for seq in sequences]
