@@ -23,12 +23,15 @@ Notes:
         {
             "text_generation": {
                 "prompt": "The capital city of Franch is ",
-                "max_new_tokens": "300",
+                "max_new_tokens": "100",
                 "temperature": "0.8",
-                "top_k": "50",
-                "random_seed": "42",
-                "extra_params": "{\"top_p\": 0.8, \"repetition_penalty\": 2.0}"
+                "top_k": "10",
+                "seed": "42",
+                "extra_params": {
+                    "repetition_penalty": 1.8
+                }
             }
         }
     ]
-}```
+}
+```
