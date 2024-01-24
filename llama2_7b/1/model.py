@@ -207,14 +207,10 @@ class Llama2:
         for seq in sequences:
             print("Output No Clean ----")
             print(seq["generated_text"])
-            print("Output Clean ----")
-            print(seq["generated_text"][len(task_text_generation_chat_input.prompt) :])
+            # print("Output Clean ----")
+            # print(seq["generated_text"][len(task_text_generation_chat_input.prompt) :])
             print("---")
-            generated_text = (
-                seq["generated_text"][len(task_text_generation_chat_input.prompt) :]
-                .strip()
-                .encode("utf-8")
-            )
+            generated_text = seq["generated_text"].strip().encode("utf-8")
             text_outputs.append(generated_text)
             max_output_len = max(max_output_len, len(generated_text))
         text_outputs_len = len(text_outputs)
