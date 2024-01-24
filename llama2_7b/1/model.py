@@ -1,39 +1,61 @@
-import random
+# pylint: skip-file
+import os
 
+# Enable following code for gpu mode only
+# TORCH_GPU_DEVICE_ID = 0
+# os.environ["CUDA_VISIBLE_DEVICES"] = f"{TORCH_GPU_DEVICE_ID}"
+
+
+import io
+import time
+import requests
+import random
+import base64
 import ray
 import torch
 import transformers
 from transformers import AutoTokenizer
+from PIL import Image
+
 import numpy as np
 
-from instill.helpers.const import DataType, TextGenerationInput
-from instill.helpers.ray_io import StandardTaskIO
-from instill.helpers.ray_config import (
-    InstillRayModelConfig,
-    get_compose_ray_address,
-    entry,
+from instill.helpers.const import DataType, TextGenerationChatInput
+from instill.helpers.ray_io import (
+    serialize_byte_tensor,
+    deserialize_bytes_tensor,
+    StandardTaskIO,
 )
 
-from ray_pb2 import (
-    ModelReadyRequest,
-    ModelReadyResponse,
-    ModelMetadataRequest,
-    ModelMetadataResponse,
-    ModelInferRequest,
-    ModelInferResponse,
-    InferTensor,
+from instill.helpers.ray_config import instill_deployment, InstillDeployable
+from instill.helpers import (
+    construct_infer_response,
+    construct_metadata_response,
+    Metadata,
 )
 
-ray.init(address=get_compose_ray_address(10001))
-# this import must come after `ray.init()`
-from ray import serve
+
+# from conversation import Conversation, conv_templates, SeparatorStyle
+
+# torch.cuda.set_per_process_memory_fraction(
+#     TORCH_GPU_MEMORY_FRACTION, 0  # it count of number of device instead of device index
+# )
 
 
-@serve.deployment()
+@instill_deployment
 class Llama2:
     def __init__(self, model_path: str):
         self.application_name = "_".join(model_path.split("/")[3:5])
         self.deployement_name = model_path.split("/")[4]
+        print(f"application_name: {self.application_name}")
+        print(f"deployement_name: {self.deployement_name}")
+        print(f"torch version: {torch.__version__}")
+
+        print(f"torch.cuda.is_available() : {torch.cuda.is_available()}")
+        print(f"torch.cuda.device_count() : {torch.cuda.device_count()}")
+        # print(f"torch.cuda.current_device() : {torch.cuda.current_device()}")
+        # print(f"torch.cuda.device(0) : {torch.cuda.device(0)}")
+        # print(f"torch.cuda.get_device_name(0) : {torch.cuda.get_device_name(0)}")
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_path, torch_dtype=torch.float32, low_cpu_mem_usage=True
         )
@@ -44,55 +66,58 @@ class Llama2:
             device="cpu",
         )
 
-    def ModelMetadata(self, req: ModelMetadataRequest) -> ModelMetadataResponse:
-        resp = ModelMetadataResponse(
-            name=req.name,
-            versions=req.version,
-            framework="python",
+    def ModelMetadata(self, req):
+        resp = construct_metadata_response(
+            req=req,
             inputs=[
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
                     name="prompt",
                     datatype=str(DataType.TYPE_STRING.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
-                    name="prompt_image",
+                Metadata(
+                    name="prompt_images",
                     datatype=str(DataType.TYPE_STRING.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
+                    name="chat_history",
+                    datatype=str(DataType.TYPE_STRING.name),
+                    shape=[1],
+                ),
+                Metadata(
+                    name="system_message",
+                    datatype=str(DataType.TYPE_STRING.name),
+                    shape=[1],
+                ),
+                Metadata(
                     name="max_new_tokens",
                     datatype=str(DataType.TYPE_UINT32.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
-                    name="stop_words",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[-1],
-                ),
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
                     name="temperature",
                     datatype=str(DataType.TYPE_FP32.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
                     name="top_k",
                     datatype=str(DataType.TYPE_UINT32.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
                     name="random_seed",
                     datatype=str(DataType.TYPE_UINT64.name),
                     shape=[1],
                 ),
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
                     name="extra_params",
                     datatype=str(DataType.TYPE_STRING.name),
                     shape=[1],
                 ),
             ],
             outputs=[
-                ModelMetadataResponse.TensorMetadata(
+                Metadata(
                     name="text",
                     datatype=str(DataType.TYPE_STRING.name),
                     shape=[-1, -1],
@@ -101,80 +126,122 @@ class Llama2:
         )
         return resp
 
-    def ModelReady(self, req: ModelReadyRequest) -> ModelReadyResponse:
-        resp = ModelReadyResponse(ready=True)
-        return resp
-
-    async def ModelInfer(self, request: ModelInferRequest) -> ModelInferResponse:
-        resp = ModelInferResponse(
-            model_name=request.model_name,
-            model_version=request.model_version,
-            outputs=[],
-            raw_output_contents=[],
+    async def __call__(self, req):
+        task_text_generation_chat_input: TextGenerationChatInput = (
+            StandardTaskIO.parse_task_text_generation_chat_input(request=req)
         )
+        print("----------------________")
+        print(task_text_generation_chat_input)
+        print("----------------________")
 
-        task_text_generation_input: TextGenerationInput = (
-            StandardTaskIO.parse_task_text_generation_input(request=request)
-        )
+        print("print(task_text_generation_chat.prompt")
+        print(task_text_generation_chat_input.prompt)
+        print("-------\n")
 
-        if task_text_generation_input.random_seed > 0:
-            random.seed(task_text_generation_input.random_seed)
-            np.random.seed(task_text_generation_input.random_seed)
-            torch.manual_seed(task_text_generation_input.random_seed)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed_all(task_text_generation_input.random_seed)
+        print("print(task_text_generation_chat.prompt_images")
+        print(task_text_generation_chat_input.prompt_images)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.chat_history")
+        print(task_text_generation_chat_input.chat_history)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.system_message")
+        print(task_text_generation_chat_input.system_message)
+        if len(task_text_generation_chat_input.system_message) is not None:
+            if len(task_text_generation_chat_input.system_message) == 0:
+                task_text_generation_chat_input.system_message = None
+        print("-------\n")
+
+        print("print(task_text_generation_chat.max_new_tokens")
+        print(task_text_generation_chat_input.max_new_tokens)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.temperature")
+        print(task_text_generation_chat_input.temperature)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.top_k")
+        print(task_text_generation_chat_input.top_k)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.random_seed")
+        print(task_text_generation_chat_input.random_seed)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.stop_words")
+        print(task_text_generation_chat_input.stop_words)
+        print("-------\n")
+
+        print("print(task_text_generation_chat.extra_params")
+        print(task_text_generation_chat_input.extra_params)
+        print("-------\n")
+
+        if task_text_generation_chat_input.temperature <= 0.0:
+            task_text_generation_chat_input.temperature = 0.8
+
+        if task_text_generation_chat_input.random_seed > 0:
+            random.seed(task_text_generation_chat_input.random_seed)
+            np.random.seed(task_text_generation_chat_input.random_seed)
+
+        # No chat_history Needed
+        # No system message Needed
+
+        t0 = time.time()
 
         sequences = self.pipeline(
-            task_text_generation_input.prompt,
+            task_text_generation_chat_input.prompt,
             do_sample=True,
-            top_k=task_text_generation_input.top_k,
-            temperature=task_text_generation_input.temperature,
+            top_k=task_text_generation_chat_input.top_k,
+            temperature=task_text_generation_chat_input.temperature,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id,
-            max_new_tokens=task_text_generation_input.max_new_tokens,
-            **task_text_generation_input.extra_params,
+            max_new_tokens=task_text_generation_chat_input.max_new_tokens,
+            **task_text_generation_chat_input.extra_params,
         )
+        print(f"Inference time cost {time.time()-t0}s")
 
-        task_text_generation_output = StandardTaskIO.parse_task_text_generation_output(
-            sequences=sequences
-        )
+        max_output_len = 0
 
-        resp.outputs.append(
-            InferTensor(
-                name="text",
-                shape=[1, len(sequences)],
-                datatype=str(DataType.TYPE_STRING),
+        text_outputs = []
+        for seq in sequences:
+            print("Output No Clean ----")
+            print(seq["generated_text"])
+            print("Output Clean ----")
+            print(seq["generated_text"][len(task_text_generation_chat_input.prompt) :])
+            print("---")
+            generated_text = (
+                seq["generated_text"][len(task_text_generation_chat_input.prompt) :]
+                .strip()
+                .encode("utf-8")
             )
+            text_outputs.append(generated_text)
+            max_output_len = max(max_output_len, len(generated_text))
+        text_outputs_len = len(text_outputs)
+        task_output = serialize_byte_tensor(np.asarray(text_outputs))
+        # task_output = StandardTaskIO.parse_task_text_generation_output(sequences)
+
+        print("Output:")
+        print(task_output)
+        print(type(task_output))
+
+        return construct_infer_response(
+            req=req,
+            outputs=[
+                Metadata(
+                    name="text",
+                    datatype=str(DataType.TYPE_STRING.name),
+                    shape=[text_outputs_len, max_output_len],
+                )
+            ],
+            raw_outputs=[task_output],
         )
 
-        resp.raw_output_contents.append(task_text_generation_output)
 
-        return resp
+deployable = InstillDeployable(
+    Llama2, model_weight_or_folder_name="Llama-2-7b-hf/", use_gpu=False
+)
 
-
-def deploy_model(model_config: InstillRayModelConfig):
-    c_app = Llama2.options(
-        name=model_config.application_name,
-        ray_actor_options=model_config.ray_actor_options,
-        max_concurrent_queries=model_config.max_concurrent_queries,
-        autoscaling_config=model_config.ray_autoscaling_options,
-    ).bind(model_config.model_path)
-
-    serve.run(
-        c_app, name=model_config.model_name, route_prefix=model_config.route_prefix
-    )
-
-
-def undeploy_model(model_name: str):
-    serve.delete(model_name)
-
-
-if __name__ == "__main__":
-    func, model_config = entry("Llama-2-7b-hf/")
-
-    model_config.ray_actor_options["num_cpus"] = 6
-
-    if func == "deploy":
-        deploy_model(model_config=model_config)
-    elif func == "undeploy":
-        undeploy_model(model_name=model_config.model_name)
+# # Optional
+# deployable.update_max_replicas(2)
+# deployable.update_min_replicas(0)
